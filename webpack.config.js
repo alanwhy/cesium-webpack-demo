@@ -4,6 +4,7 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const cesiumSource = "node_modules/cesium/Source";
 const cesiumWorkers = "../Build/Cesium/Workers";
 const CopyWebpackPlugin = require("copy-webpack-plugin");
+const TerserPlugin = require("terser-webpack-plugin");
 
 module.exports = {
   context: __dirname,
@@ -40,6 +41,21 @@ module.exports = {
         test: /\.(png|gif|jpg|jpeg|svg|xml|json)$/,
         use: ["url-loader"],
       },
+      {
+        test: /\.js$/,
+        enforce: "pre",
+        include: path.resolve(__dirname, cesiumSource),
+        use: [
+          {
+            loader: "strip-pragma-loader",
+            options: {
+              pragmas: {
+                debug: false,
+              },
+            },
+          },
+        ],
+      },
     ],
   },
   plugins: [
@@ -70,7 +86,20 @@ module.exports = {
       CESIUM_BASE_URL: JSON.stringify(""),
     }),
   ],
+  optimization: {
+    splitChunks: {
+      cacheGroups: {
+        commons: {
+          name: "commons",
+          chunks: "initial",
+          minChunks: 2,
+        },
+      },
+    },
+    minimizer: [new TerserPlugin()],
+  },
   devServer: {
     contentBase: path.join(__dirname, "dist"),
   },
+  devtool: "eval",
 };
